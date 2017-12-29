@@ -48,22 +48,22 @@ export interface ActionCmd<A extends Action> {
   simulate: SingleCmdSimulationFunction<A>;
 }
 
-export interface MapCmd<A extends Action> {
+export interface MapCmd<A extends Action, B extends Action> {
   type: 'MAP';
   tagger: ActionCreator<A>;
-  nestedCmd: CmdType<A>;
+  nestedCmd: CmdType<B>;
   args: any[];
   simulate: SingleCmdSimulationFunction<A> | MultiCmdSimulationFunction<A>;
 }
 
-export interface RunCmd<A extends Action> {
+export interface RunCmd<A extends Action, B extends Action> {
   type: 'RUN';
   func: Function;
   args?: any[];
   failActionCreator?: ActionCreator<A>;
-  successActionCreator?: ActionCreator<A>;
+  successActionCreator?: ActionCreator<B>;
   forceSync?: boolean;
-  simulate: SingleCmdSimulationFunction<A>;
+  simulate: SingleCmdSimulationFunction<A | B>;
 }
 
 //deprecated types
@@ -71,12 +71,12 @@ export type SequenceCmd<A extends Action> = ListCmd<A>;
 export type BatchCmd<A extends Action> = ListCmd<A>;
 
 
-export type CmdType<A extends Action> =
+export type CmdType<A extends Action, B extends Action = A> =
   | ActionCmd<A>
   | ListCmd<A>
-  | MapCmd<A>
+  | MapCmd<A, B>
   | NoneCmd
-  | RunCmd<A>
+  | RunCmd<A, B>
   | BatchCmd<A>
   | SequenceCmd<A>;
   
@@ -103,21 +103,21 @@ declare class Cmd {
     }
   ) => ListCmd<A>;
 
-  static readonly map: <A extends Action, B extends Action>(
-    cmd: CmdType<B>,
-    tagger: (subAction: B) => A,
+  static readonly map: <A extends Action, B extends Action, C extends Action = B>(
+    cmd: CmdType<B, C>,
+    tagger: (subAction: B | C) => A,
     args?: any[]
-  ) => MapCmd<A>;
+  ) => MapCmd<A, B | C>;
 
-  static readonly run: <A extends Action>(
+  static readonly run: <A extends Action, B extends Action>(
     f: Function,
     options?: {
       args?: any[];
       failActionCreator?: ActionCreator<A>;
-      successActionCreator?: ActionCreator<A>;
+      successActionCreator?: ActionCreator<B>;
       forceSync?: boolean;
     }
-  ) => RunCmd<A>;
+  ) => RunCmd<A, B>;
 }
 
 export type ReducerMapObject<S, A extends Action = AnyAction> = {
